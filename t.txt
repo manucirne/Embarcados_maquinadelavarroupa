@@ -1,0 +1,15 @@
+- Se vc aperta outro botao muito rpido nao vai
+
+-Mostrar quanto tempo falata para acabar 
+
+-Facil acesso
+	Importancias interrupts facilm  mudanca
+	play/p (0) voltar menu(tela) , e escolhas(4)
+	-botao, comecar, parar a forca, abrir porta.
+Escolhas: 
+dia dia
+leve(rapida)
+pesada
+
+
+-Configuracao de lavagem
