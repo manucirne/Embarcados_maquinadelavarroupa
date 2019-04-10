@@ -91,6 +91,13 @@
 #include "conf_board.h"
 #include "conf_example.h"
 #include "conf_uart_serial.h"
+
+#include "tfont.h"
+#include "sourcecodepro_28.h"
+#include "calibri_36.h"
+#include "arial_72.h"
+
+
 #ifndef CONF_USART_SERIAL_H
 #define CONF_USART_SERIAL_H
 
@@ -112,26 +119,31 @@
 #define LED_PIO_IDX       8u                    // ID do LED no PIO
 #define LED_PIO_IDX_MASK  (1u << LED_PIO_IDX)   // Mascara para CONTROLARMOS o LED
 
+/**
  typedef struct {
 	 const uint8_t *data;
 	 uint16_t width;
 	 uint16_t height;
 	 uint8_t dataSize;
  } tImage;
+ */
  
 
-
-
-#include "icones/icone1.h"
 #include "icones/diadia.h"
 #include "icones/play.h"
 #include "icones/lavagens.h"
 #include "icones/fast.h"
+#include "icones/sol.h"
+#include "icones/pesada.h"
+#include "icones/fundo.h"
+
 
 #define MAX_ENTRIES        3
 #define STRING_LENGTH     70
 
 #define USART_TX_MAX_LENGTH     0xff
+
+#define MAQUINA1
 
 struct ili9488_opt_t g_ili9488_display_opt;
 const uint32_t BUTTON_W = 120;
@@ -139,34 +151,181 @@ const uint32_t BUTTON_H = 150;
 const uint32_t BUTTON_BORDER = 2;
 const uint32_t BUTTON_X = ILI9488_LCD_WIDTH/4;
 const uint32_t BUTTON_Y = ILI9488_LCD_HEIGHT/4;
+
+
+void pesada_callback(void);
+void rapida_callback(void);
+void diadia_callback(void);
+
+
 	
 /** \brief Touch event struct */
+
+typedef struct ciclo t_ciclo;
+
+struct ciclo{
+	char nome[32];           // nome do ciclo, para ser exibido
+	int  enxagueTempo;       // tempo que fica em cada enxague
+	int  enxagueQnt;         // quantidade de enxagues
+	int  centrifugacaoRPM;   // velocidade da centrifugacao
+	int  centrifugacaoTempo; // tempo que centrifuga
+	char heavy;              // modo pesado de lavagem
+	char bubblesOn;  
+	
+	t_ciclo *previous;
+	t_ciclo *next;
+};
+
+t_ciclo c_rapida = {.nome = "Rapido",
+	.enxagueTempo = 5,
+	.enxagueQnt = 3,
+	.centrifugacaoRPM = 900,
+	.centrifugacaoTempo = 5,
+	.heavy = 0,
+	.bubblesOn = 1
+
+};
+
+t_ciclo c_diadia = {.nome = "Diario",
+	.enxagueTempo = 15,
+	.enxagueQnt = 2,
+	.centrifugacaoRPM = 1200,
+	.centrifugacaoTempo = 8,
+	.heavy = 0,
+	.bubblesOn = 1,
+};
+
+t_ciclo c_pesada = {.nome = "Pesado",
+	.enxagueTempo = 10,
+	.enxagueQnt = 3,
+	.centrifugacaoRPM = 1200,
+	.centrifugacaoTempo = 10,
+	.heavy = 1,
+	.bubblesOn = 1,
+};
+
+
+typedef struct botao t_botao;
+
 struct botao {
-	uint16_t nome;
-	uint16_t x;
-	uint16_t y;
-	uint16_t size;
+	int x;
+	int y;
+	int size;
 	tImage *image;
 	void (*p_handler)(void);
-};	
+};
+
+
+t_botao lavagemRapida={.x = 260,
+	.y = 50,
+	.size = 100,
+	.p_handler = rapida_callback,
+	.image = &fast,
+};
+
+t_botao LavagemDiadia= {
+	.x = 140,
+	.y = 50,
+	.size = 100,
+	.p_handler = diadia_callback,
+	.image = &sol,
+};
+
+t_botao LavagemPesada = {
+	.x = 20,
+	.y = 50,
+	.size = 100,
+	.p_handler = pesada_callback,
+	.image = &pesada,
+};
+/**
+struct botao playPause;
+playPause.x = 150;
+playPause.y = 120;
+playPause.size = 100;
+playPause.p_handler = playpause_callback;
+playPause.image = &play;
+
+struct botao voltar;
+voltar.x = 50;
+voltar.y = 120;
+voltar.size = 100;
+voltar.p_handler = voltar_callback;
+voltar.image = &play;
+*/
+
+t_botao botoes[] = {&LavagemPesada, &LavagemDiadia, &lavagemRapida};
+
+
+/************************************************************************/
+/* variaveis globais                                                    */
+/************************************************************************/
+volatile Bool f_rtt_alarme = false;
+volatile Bool em_ciclo = false;
+//int passo =0;
+int cronometro =0;
+int t_atual =0 ;
+
+char buffert [32];
+
+/************************************************************************/
+/* prototypes                                                           */
+/************************************************************************/
+void pin_toggle(Pio *pio, uint32_t mask);
+void io_init(void);
+static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
+void tela_atual(t_ciclo nome);
+void draw_screen(void);
+void inicio(void);
+
+/************************************************************************/
+/* interrupcoes                                                         */
+/************************************************************************/
+
+void RTT_Handler(void)
+{
+	uint32_t ul_status;
+
+	/* Get RTT status */
+	ul_status = rtt_get_status(RTT);
+
+	/* IRQ due to Time has changed */
+	if ((ul_status & RTT_SR_RTTINC) == RTT_SR_RTTINC) {  }
+
+	/* IRQ due to Alarm */
+	if ((ul_status & RTT_SR_ALMS) == RTT_SR_ALMS) {
+		pin_toggle(LED_PIO, LED_PIO_IDX_MASK);    // BLINK Led
+		f_rtt_alarme = true;                  // flag RTT alarme
+	}
+}
 
 void rapida_callback(void){
-	
-	
+		pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
+		delay_ms(200);                   // Delay por software de 200 ms
+		pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
+		delay_ms(200);                   // Delay por software de 200 ms
+		
+		tela_atual(c_rapida);
+		
 }
 
 void diadia_callback(void){
-	
+		pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
+		delay_ms(200);                   // Delay por software de 200 ms
+		pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
+		delay_ms(200);                   // Delay por software de 200 ms
+		
+		tela_atual(c_diadia);
+		
 }
 
 void pesada_callback(void){
-	char buf[STRING_LENGTH];
-	printf(7,"rapidaa");
+	
 	pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
 	delay_ms(200);                   // Delay por software de 200 ms
 	pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
 	delay_ms(200);                   // Delay por software de 200 ms
-	
+	tela_atual(c_pesada);
 	
 }
 
@@ -178,13 +337,102 @@ void voltar_callback(void){
 	
 }
 
+/************************************************************************/
+/* funcoes                                                              */
+/************************************************************************/
+
+inicio(){
+	
+	ili9488_draw_pixmap(LavagemPesada.x,
+	LavagemPesada.y,
+	LavagemPesada.image->width,
+	LavagemPesada.image->height,
+	LavagemPesada.image->data);
+	ili9488_draw_pixmap(LavagemDiadia.x,
+	LavagemDiadia.y,
+	LavagemDiadia.image->width,
+	LavagemDiadia.image->height,
+	LavagemDiadia.image->data);
+	ili9488_draw_pixmap(lavagemRapida.x,
+	lavagemRapida.y,
+	lavagemRapida.image->width,
+	lavagemRapida.image->height,
+	lavagemRapida.image->data);
+	
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+	ili9488_draw_string(LavagemPesada.x + LavagemPesada.image->width/2 -30,
+	LavagemPesada.y + LavagemPesada.image->height+10,
+	"Pesada" );
+	ili9488_draw_string(LavagemDiadia.x + LavagemDiadia.image->width/2-30,
+	LavagemDiadia.y + LavagemDiadia.image->height+10,
+	"Dia a Dia" );
+	ili9488_draw_string(lavagemRapida.x + lavagemRapida.image->width/2-30,
+	lavagemRapida.y + lavagemRapida.image->height+10,
+	"Rapida" );
+	
+}
+tela_atual(t_ciclo cicle){
+	t_atual= cicle.enxagueTempo;
+	em_ciclo = true;
+	//ili9488_draw_pixmap(0,0,480,380, &fundo);
+	draw_screen();
+	
+	ili9488_draw_pixmap(20,
+						50,
+						100,
+						100,
+						&play);
+						
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+	ili9488_draw_string(70 , 90,cicle.nome );
+}
+
+void pin_toggle(Pio *pio, uint32_t mask){
+	if(pio_get_output_data_status(pio, mask))
+	pio_clear(pio, mask);
+	else
+	pio_set(pio,mask);
+}
+
+void io_init(void){
+	/* led */
+	pmc_enable_periph_clk(LED_PIO_ID);
+	pio_configure(LED_PIO, PIO_OUTPUT_0, LED_PIO_IDX_MASK, PIO_DEFAULT);
+}
+
+static float get_time_rtt(){
+	uint ul_previous_time = rtt_read_timer_value(RTT);
+}
+
+static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
+{
+	uint32_t ul_previous_time;
+
+	/* Configure RTT for a 1 second tick interrupt */
+	rtt_sel_source(RTT, false);
+	rtt_init(RTT, pllPreScale);
+	
+	ul_previous_time = rtt_read_timer_value(RTT);
+	while (ul_previous_time == rtt_read_timer_value(RTT));
+	
+	rtt_write_alarm_time(RTT, IrqNPulses+ul_previous_time);
+
+	/* Enable RTT interrupt */
+	NVIC_DisableIRQ(RTT_IRQn);
+	NVIC_ClearPendingIRQ(RTT_IRQn);
+	NVIC_SetPriority(RTT_IRQn, 0);
+	NVIC_EnableIRQ(RTT_IRQn);
+	rtt_enable_interrupt(RTT, RTT_MR_ALMIEN);
+}
 
 
-int processa_touch(struct botao b[], struct botao *rtn, uint N ,uint x, uint y ){
+int processa_touch(t_botao  b[], t_botao  *rtn, uint N ,uint x, uint y ){
 	char buf[STRING_LENGTH];
-	sprintf(buf, "entrou no touch");
+	
+	printf( "entrou no touch");
 	
 	for(int i = 0;i < N;i++){
+	
 		if(x >= b[i].x && x <= (b[i].x + b[i].size)) {
 			if(y >= b[i].y && y >= (b[i].y + b[i].size) ){
 				*rtn= b[i];
@@ -205,6 +453,20 @@ static void configure_lcd(void){
 
 	/* Initialize LCD */
 	ili9488_init(&g_ili9488_display_opt);
+}
+
+void font_draw_text(tFont *font, const char *text, int x, int y, int spacing) {
+	char *p = text;
+	while(*p != NULL) {
+		char letter = *p;
+		int letter_offset = letter - font->start_char;
+		if(letter <= font->end_char) {
+			tChar *current_char = font->chars + letter_offset;
+			ili9488_draw_pixmap(x, y, current_char->image->width, current_char->image->height, current_char->image->data);
+			x += current_char->image->width + spacing;
+		}
+		p++;
+	}
 }
 
 /**
@@ -356,7 +618,7 @@ void update_screen(uint32_t tx, uint32_t ty) {
 	}
 }
 
-void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
+void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 {
 	/* USART tx buffer initialized to 0 */
 	char tx_buf[STRING_LENGTH * MAX_ENTRIES] = {0};
@@ -384,9 +646,11 @@ void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 		sprintf(buf, "X:%3d Y:%3d \n", conv_x, conv_y);
 		
 		/* -----------------------------------------------------*/
-		struct botao bAtual;
+		t_botao bAtual;
 		//sprintf(buf, " processa touch");
 		if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y))
+			//sprintf(buf,bAtual.x);
+			/printf(buf);
 			bAtual.p_handler();
 		//update_screen(conv_x, conv_y);
 		/* -----------------------------------------------------*/
@@ -419,10 +683,15 @@ int main(void)
 	};
 
 	sysclk_init(); /* Initialize system clocks */
+	io_init();
 	board_init();  /* Initialize board */
 	configure_lcd();
 	draw_screen();
 	//draw_button(0);
+	
+	// Inicializa RTT com IRQ no alarme.
+	f_rtt_alarme = true;
+	
 	/* Initialize the mXT touch device */
 	mxt_init(&device);
 	
@@ -432,75 +701,12 @@ int main(void)
 	printf("\n\rmaXTouch data USART transmitter\n\r");
 		
 	/* -----------------------------------------------------*/
-	struct botao lavagemRapida;
-	lavagemRapida.x = 260;
-	lavagemRapida.y = 50;
-	lavagemRapida.size = 100;
-	lavagemRapida.p_handler = rapida_callback;
-	lavagemRapida.image = &play;
-
-	struct botao LavagemDiadia;
-	LavagemDiadia.x = 140;
-	LavagemDiadia.y = 50;
-	LavagemDiadia.size = 100;
-	LavagemDiadia.p_handler = diadia_callback;
-	LavagemDiadia.image = &play;
 	
-	struct botao LavagemPesada;
-	LavagemPesada.x = 20;
-	LavagemPesada.y = 50;
-	LavagemPesada.size = 100;
-	LavagemPesada.p_handler = pesada_callback;
-	LavagemPesada.image = &play;
 	
-	struct botao playPause;
-	playPause.x = 150;
-	playPause.y = 120;
-	playPause.size = 100;
-	playPause.p_handler = playpause_callback;
-	playPause.image = &play;
 	
-	struct botao voltar;
-	voltar.x = 50;
-	voltar.y = 120;
-	voltar.size = 100;
-	voltar.p_handler = voltar_callback;
-	voltar.image = &play;
+	inicio();
 	
 
-
-	
-	
-
-
-	ili9488_draw_pixmap(LavagemPesada.x, 
-						LavagemPesada.y, 
-						LavagemPesada.image->width, 
-						LavagemPesada.image->height, 
-						LavagemPesada.image->data);
-	ili9488_draw_pixmap(LavagemDiadia.x,
-						LavagemDiadia.y,
-						LavagemDiadia.image->width,
-						LavagemDiadia.image->height,
-						LavagemDiadia.image->data);
-	ili9488_draw_pixmap(lavagemRapida.x,
-						lavagemRapida.y,
-						lavagemRapida.image->width,
-						lavagemRapida.image->height,
-						lavagemRapida.image->data);
-	
-	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	ili9488_draw_string(LavagemPesada.x + LavagemPesada.image->width/2 -30,
-						LavagemPesada.y + LavagemPesada.image->height+10, 
-						"Pesada" );
-	ili9488_draw_string(LavagemDiadia.x + LavagemDiadia.image->width/2-30,
-						LavagemDiadia.y + LavagemDiadia.image->height+10,
-						"Dia a Dia" );
-	ili9488_draw_string(lavagemRapida.x + lavagemRapida.image->width/2-30,
-						lavagemRapida.y + lavagemRapida.image->height+10,
-						"Rapida" );
-	
-	struct botao botoes[] = {&LavagemPesada, &LavagemDiadia};
 	/* -----------------------------------------------------*/
 
 	while (true) {
@@ -509,6 +715,35 @@ int main(void)
 		if (mxt_is_message_pending(&device)) {
 			mxt_handler(&device, botoes, 2);
 		}
+		
+		
+		if (f_rtt_alarme){
+			uint16_t pllPreScale = (int) (((float) 32768) / 2.0);
+			uint32_t irqRTTvalue  = 4;
+			// reinicia RTT para gerar um novo IRQ
+			if(em_ciclo){
+				sprintf(buffert,"%02d",t_atual - cronometro);
+				//ili9488_draw_string(80, 200,buffert );
+				 font_draw_text(&calibri_36, buffert, 80, 200, 1);
+				
+				if (cronometro == t_atual){
+					em_ciclo = false;
+					ili9488_draw_string(300, 250,"ACABOU!");
+					cronometro = 0;
+					inicio();
+					
+				}
+				
+				cronometro ++;	
+			}
+			
+			RTT_init(pllPreScale, irqRTTvalue);
+			
+			f_rtt_alarme = false;
+		}
+		
+		
+		
 		
 	}
 
