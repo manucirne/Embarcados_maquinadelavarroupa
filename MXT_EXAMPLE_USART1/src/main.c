@@ -208,9 +208,9 @@ t_ciclo c_pesada = {.nome = "Pesado",
 typedef struct botao t_botao;
 
 struct botao {
-	int x;
-	int y;
-	int size;
+	uint x;
+	uint y;
+	uint size;
 	tImage *image;
 	void (*p_handler)(void);
 };
@@ -374,7 +374,7 @@ voltar.p_handler = voltar_callback;
 voltar.image = &play;
 **/
 
-t_botao botoes[] = {&LavagemPesada, &LavagemDiadia, &LavagemRapida};
+
 
 
 inicio(){
@@ -613,25 +613,11 @@ static void mxt_init(struct mxt_device *device)
 }
 
 void draw_screen(void) {
-	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	ili9488_draw_filled_rectangle(0, 0, 480, 320);
 }
 
-void draw_button(uint32_t clicked) {
-	static uint32_t last_state = 255; // undefined
-	if(clicked == last_state) return;
-	
-	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
-	if(clicked) {
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-		ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
-	} else {
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
-		ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
-	}
-	last_state = clicked;
-}
+
 
 uint32_t convert_axis_system_x(uint32_t touch_y) {
 	// entrada: 4096 - 0 (sistema de coordenadas atual)
@@ -645,15 +631,7 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 	return ILI9488_LCD_HEIGHT - ILI9488_LCD_HEIGHT*touch_x/4096;
 }
 
-void update_screen(uint32_t tx, uint32_t ty) {
-	if(tx >= BUTTON_X-BUTTON_W/2 && tx <= BUTTON_X + BUTTON_W/2) {
-		if(ty >= BUTTON_Y-BUTTON_H/2 && ty <= BUTTON_Y) {
-			draw_button(1);
-		} else if(ty > BUTTON_Y && ty < BUTTON_Y + BUTTON_H/2) {
-			draw_button(0);
-		}
-	}
-}
+
 
 void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 {
@@ -746,7 +724,7 @@ int main(void)
 	
 
 	/* -----------------------------------------------------*/
-	t_botao botoes[] = {&LavagemPesada, &LavagemDiadia, &LavagemRapida};
+	t_botao botoes[] = {LavagemPesada, LavagemDiadia, LavagemRapida};
 	while (true) {
 		/* Check for any pending messages and run message handler if any
 		 * message is found in the queue */
