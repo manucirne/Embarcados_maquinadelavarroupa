@@ -468,6 +468,8 @@ int processa_touch(t_botao  b[], t_botao  *rtn, uint N ,uint x, uint y ){
 	printf( "entrou no touch");
 	
 	for(int i = 0;i < N;i++){
+		printf( "XT: %d  YT: %d /n", x, y);
+		printf( "BXT: %d  BYT: %d size: %d/n", b[i].x, b[i].y, b[i].size);
 		if(x >= (b[i].x) && x <= (b[i].x + b[i].size)) {
 			if(y >= (b[i].y) && y <= (b[i].y + b[i].size) ){
 				*rtn = b[i];
@@ -611,8 +613,8 @@ static void mxt_init(struct mxt_device *device)
 }
 
 void draw_screen(void) {
-	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-	ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH-1, ILI9488_LCD_HEIGHT-1);
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+	ili9488_draw_filled_rectangle(0, 0, 480, 320);
 }
 
 void draw_button(uint32_t clicked) {
@@ -640,7 +642,7 @@ uint32_t convert_axis_system_x(uint32_t touch_y) {
 uint32_t convert_axis_system_y(uint32_t touch_x) {
 	// entrada: 0 - 4096 (sistema de coordenadas atual)
 	// saida: 0 - 320
-	return ILI9488_LCD_HEIGHT*touch_x/4096;
+	return ILI9488_LCD_HEIGHT - ILI9488_LCD_HEIGHT*touch_x/4096;
 }
 
 void update_screen(uint32_t tx, uint32_t ty) {
@@ -674,8 +676,8 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 		}
 		
 		 // eixos trocados (quando na vertical LCD)
-		uint32_t conv_x = convert_axis_system_x(touch_event.y);
-		uint32_t conv_y = convert_axis_system_y(touch_event.x);
+		uint32_t conv_x = convert_axis_system_x(touch_event.x);
+		uint32_t conv_y = convert_axis_system_y(touch_event.y);
 		
 		/* Format a new entry in the data string that will be sent over USART */
 		sprintf(buf, "X:%3d Y:%3d \n", conv_x, conv_y);
