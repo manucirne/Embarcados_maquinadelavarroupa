@@ -216,16 +216,17 @@ struct botao {
 };
 
 
-t_botao lavagemRapida={.x = 260,
-	.y = 50,
+t_botao LavagemRapida={
+	.x = 170,
+	.y = 20,
 	.size = 100,
 	.p_handler = rapida_callback,
 	.image = &fast,
 };
 
 t_botao LavagemDiadia= {
-	.x = 140,
-	.y = 50,
+	.x = 20,
+	.y = 170,
 	.size = 100,
 	.p_handler = diadia_callback,
 	.image = &sol,
@@ -233,28 +234,16 @@ t_botao LavagemDiadia= {
 
 t_botao LavagemPesada = {
 	.x = 20,
-	.y = 50,
+	.y = 20,
 	.size = 100,
 	.p_handler = pesada_callback,
 	.image = &pesada,
 };
-/**
-struct botao playPause;
-playPause.x = 150;
-playPause.y = 120;
-playPause.size = 100;
-playPause.p_handler = playpause_callback;
-playPause.image = &play;
 
-struct botao voltar;
-voltar.x = 50;
-voltar.y = 120;
-voltar.size = 100;
-voltar.p_handler = voltar_callback;
-voltar.image = &play;
-*/
 
-t_botao botoes[] = {&LavagemPesada, &LavagemDiadia, &lavagemRapida};
+
+
+
 
 
 /************************************************************************/
@@ -300,6 +289,9 @@ void RTT_Handler(void)
 }
 
 void rapida_callback(void){
+		char buf[STRING_LENGTH];
+		sprintf(buf, "entrou no rapida\n");
+		printf(buf);
 		pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
 		delay_ms(200);                   // Delay por software de 200 ms
 		pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
@@ -310,6 +302,9 @@ void rapida_callback(void){
 }
 
 void diadia_callback(void){
+		char buf[STRING_LENGTH];
+		sprintf(buf, "entrou no diadia\n");
+		printf(buf);
 		pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
 		delay_ms(200);                   // Delay por software de 200 ms
 		pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
@@ -320,7 +315,9 @@ void diadia_callback(void){
 }
 
 void pesada_callback(void){
-	
+	char buf[STRING_LENGTH];
+	sprintf(buf, "entrou no pesada\n");
+	printf(buf);
 	pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
 	delay_ms(200);                   // Delay por software de 200 ms
 	pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
@@ -340,6 +337,45 @@ void voltar_callback(void){
 /************************************************************************/
 /* funcoes                                                              */
 /************************************************************************/
+/**
+t_botao LavagemRapida;
+LavagemRapida.x = 260;
+LavagemRapida.y = 50;
+LavagemRapida.size = 100;
+LavagemRapida.p_handler = rapida_callback;
+LavagemRapida.image = &fast;
+
+t_botao LavagemDiadia;
+LavagemDiadia.x = 140;
+LavagemDiadia.y = 50;
+LavagemDiadia.size = 100;
+LavagemDiadia.p_handler = diadia_callback;
+LavagemDiadia.image = &sol;
+
+t_botao LavagemPesada;
+LavagemPesada.x = 150;
+LavagemPesada.y = 120;
+LavagemPesada.size = 100;
+LavagemPesada.p_handler = pesada_callback;
+LavagemPesada.image = &pesada;
+
+t_botao playPause;
+playPause.x = 150;
+playPause.y = 120;
+playPause.size = 100;
+playPause.p_handler = playpause_callback;
+playPause.image = &play;
+
+t_botao voltar;
+voltar.x = 50;
+voltar.y = 120;
+voltar.size = 100;
+voltar.p_handler = voltar_callback;
+voltar.image = &play;
+**/
+
+t_botao botoes[] = {&LavagemPesada, &LavagemDiadia, &LavagemRapida};
+
 
 inicio(){
 	
@@ -353,11 +389,11 @@ inicio(){
 	LavagemDiadia.image->width,
 	LavagemDiadia.image->height,
 	LavagemDiadia.image->data);
-	ili9488_draw_pixmap(lavagemRapida.x,
-	lavagemRapida.y,
-	lavagemRapida.image->width,
-	lavagemRapida.image->height,
-	lavagemRapida.image->data);
+	ili9488_draw_pixmap(LavagemRapida.x,
+	LavagemRapida.y,
+	LavagemRapida.image->width,
+	LavagemRapida.image->height,
+	LavagemRapida.image->data);
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	ili9488_draw_string(LavagemPesada.x + LavagemPesada.image->width/2 -30,
@@ -366,8 +402,8 @@ inicio(){
 	ili9488_draw_string(LavagemDiadia.x + LavagemDiadia.image->width/2-30,
 	LavagemDiadia.y + LavagemDiadia.image->height+10,
 	"Dia a Dia" );
-	ili9488_draw_string(lavagemRapida.x + lavagemRapida.image->width/2-30,
-	lavagemRapida.y + lavagemRapida.image->height+10,
+	ili9488_draw_string(LavagemRapida.x + LavagemRapida.image->width/2-30,
+	LavagemRapida.y + LavagemRapida.image->height+10,
 	"Rapida" );
 	
 }
@@ -432,10 +468,9 @@ int processa_touch(t_botao  b[], t_botao  *rtn, uint N ,uint x, uint y ){
 	printf( "entrou no touch");
 	
 	for(int i = 0;i < N;i++){
-	
-		if(x >= b[i].x && x <= (b[i].x + b[i].size)) {
-			if(y >= b[i].y && y >= (b[i].y + b[i].size) ){
-				*rtn= b[i];
+		if(x >= (b[i].x) && x <= (b[i].x + b[i].size)) {
+			if(y >= (b[i].y) && y <= (b[i].y + b[i].size) ){
+				*rtn = b[i];
 				return 1;
 			}
 		}
@@ -650,7 +685,7 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 		//sprintf(buf, " processa touch");
 		if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y))
 			//sprintf(buf,bAtual.x);
-			/printf(buf);
+			//printf(buf);
 			bAtual.p_handler();
 		//update_screen(conv_x, conv_y);
 		/* -----------------------------------------------------*/
@@ -693,6 +728,7 @@ int main(void)
 	f_rtt_alarme = true;
 	
 	/* Initialize the mXT touch device */
+	
 	mxt_init(&device);
 	
 	/* Initialize stdio on USART */
@@ -708,12 +744,12 @@ int main(void)
 	
 
 	/* -----------------------------------------------------*/
-
+	t_botao botoes[] = {&LavagemPesada, &LavagemDiadia, &LavagemRapida};
 	while (true) {
 		/* Check for any pending messages and run message handler if any
 		 * message is found in the queue */
 		if (mxt_is_message_pending(&device)) {
-			mxt_handler(&device, botoes, 2);
+			mxt_handler(&device, botoes, 3);
 		}
 		
 		
