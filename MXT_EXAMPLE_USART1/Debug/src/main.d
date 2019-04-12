@@ -186,7 +186,7 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  ../src/sourcecodepro_28.h ../src/calibri_36.h ../src/arial_72.h \
  ../src/icones/diadia.h ../src/icones/play.h ../src/icones/lavagens.h \
  ../src/icones/fast.h ../src/icones/sol.h ../src/icones/pesada.h \
- ../src/icones/fundo.h
+ ../src/icones/fundo.h ../src/icones/voltar.h
 
 ../src/asf.h:
 
@@ -599,3 +599,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/icones/pesada.h:
 
 ../src/icones/fundo.h:
+
+../src/icones/voltar.h:
