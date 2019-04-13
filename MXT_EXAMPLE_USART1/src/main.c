@@ -281,7 +281,7 @@ t_botao centrifuga = {
 	.image = &menu,
 };
 
-t_botao enchague = {
+t_botao enxague = {
 	.x = 20,
 	.y = 170,
 	.size = 100,
@@ -827,7 +827,7 @@ int main(void)
 	t_botao botoes2[] = {playpause, volta};
 	int nb2 = 2;
 	// criar os botões de ciclo para as escolhas
-	t_botao botoes_menu[] = {enchague, centrifuga, playpause, volta};
+	t_botao botoes_menu[] = {enxague, centrifuga, playpause, volta};
 		int nbm = 4;
 	
 	
