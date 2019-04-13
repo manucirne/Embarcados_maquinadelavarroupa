@@ -137,6 +137,8 @@
 #include "icones/pesada.h"
 #include "icones/fundo.h"
 #include "icones/voltar.h"
+#include "icones/home.h"
+#include "icones/menu.h"
 
 
 #define MAX_ENTRIES        3
@@ -159,7 +161,10 @@ void rapida_callback(void);
 void diadia_callback(void);
 void playpause_callback(void);
 void voltar_callback(void);
+void menu_callback(void);
 void inicio(void);
+void centrifuga_callback(void);
+void enxague_callback(void);
 
 
 	
@@ -245,7 +250,7 @@ t_botao LavagemPesada = {
 };
 
 t_botao playpause = {
-	.x = 290,
+	.x = 310,
 	.y = 170,
 	.size = 100,
 	.p_handler = playpause_callback,
@@ -253,12 +258,37 @@ t_botao playpause = {
 };
 
 t_botao volta = {
-	.x = 290,
+	.x = 310,
 	.y = 20,
 	.size = 100,
 	.p_handler = voltar_callback,
-	.image = &voltar,
+	.image = &home,
 };
+
+t_botao opcao = {
+	.x = 170,
+	.y = 170,
+	.size = 100,
+	.p_handler = menu_callback,
+	.image = &menu,
+};
+
+t_botao centrifuga = {
+	.x = 170,
+	.y = 170,
+	.size = 100,
+	.p_handler = centrifuga_callback,
+	.image = &menu,
+};
+
+t_botao enchague = {
+	.x = 20,
+	.y = 170,
+	.size = 100,
+	.p_handler = enxague_callback,
+	.image = &menu,
+};
+
 
 
 
@@ -279,6 +309,7 @@ volatile Bool flag_rapida = false;
 volatile Bool flag_diadia = false;
 volatile Bool flag_pesada = false;
 volatile Bool flag_pause = true;
+volatile Bool flag_menu = false;
 
 char buffert [32];
 
@@ -340,6 +371,29 @@ void pesada_callback(void){
 	
 }
 
+void menu_callback(void){
+	char buf[STRING_LENGTH];
+	sprintf(buf, "entrou no menu\n");
+	printf(buf);
+	flag_inicio = false;
+	flag_menu = true;
+	
+}
+
+void enxague_callback(void){
+	char buf[STRING_LENGTH];
+	sprintf(buf, "entrou no enxague\n");
+	printf(buf);
+	
+}
+
+void centrifuga_callback(void){
+	char buf[STRING_LENGTH];
+	sprintf(buf, "entrou no centrifuga\n");
+	printf(buf);
+	
+}
+
 void playpause_callback(void){
 	flag_pause = !flag_pause;
 }
@@ -347,6 +401,7 @@ void playpause_callback(void){
 void voltar_callback(void){
 	inicio();
 	flag_inicio = true;
+	flag_pause = true;
 }
 
 /************************************************************************/
@@ -370,6 +425,11 @@ inicio(){
 	LavagemRapida.image->width,
 	LavagemRapida.image->height,
 	LavagemRapida.image->data);
+	ili9488_draw_pixmap(opcao.x,
+	opcao.y,
+	opcao.image->width,
+	opcao.image->height,
+	opcao.image->data);
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	ili9488_draw_string(LavagemPesada.x + LavagemPesada.image->width/2 -30,
@@ -381,6 +441,9 @@ inicio(){
 	ili9488_draw_string(LavagemRapida.x + LavagemRapida.image->width/2-30,
 	LavagemRapida.y + LavagemRapida.image->height+10,
 	"Rapida" );
+	ili9488_draw_string(opcao.x + opcao.image->width/2-30,
+	opcao.y + opcao.image->height+10,
+	"Menu" );
 	
 }
 tela_atual(t_ciclo cicle, t_botao b[], int n){
@@ -388,6 +451,7 @@ tela_atual(t_ciclo cicle, t_botao b[], int n){
 	// contador if 1 enxague if 2 centrifugação e conta o tempo em cada uma
 	t_atual= cicle.enxagueTempo;
 	em_ciclo = true;
+	
 	draw_screen();
 	for (int i = 0; i < n; i++){
 		ili9488_draw_pixmap(b[i].x,
@@ -396,10 +460,62 @@ tela_atual(t_ciclo cicle, t_botao b[], int n){
 		b[i].image->height,
 		b[i].image->data);
 	}
+	;
 						
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	ili9488_draw_string(20 , 20,cicle.nome );
+	ili9488_draw_string(320 , 129,"Home" );
+	ili9488_draw_string(295 , 266,"Iniciar" );
+	ili9488_draw_string(295 , 296,"Lavagem" );
 }
+
+//animação tentativa tosca
+void animacao(tImage imagens[], int n ){
+	for(int i = 0; i < n, i++){
+		ili9488_draw_pixmap(30,
+		30,
+		imagens[i]->width,
+		imagens[i]->height,
+		imagens[i]->data);
+		}
+	}
+}
+
+void tela_menu( t_botao b[], int n){
+	
+	draw_screen();
+	for (int i = 0; i < n; i++){
+		ili9488_draw_pixmap(b[i].x,
+		b[i].y,
+		b[i].image->width,
+		b[i].image->height,
+		b[i].image->data);
+	}
+	ili9488_draw_string(320 , 129,"Home" );
+	ili9488_draw_string(295 , 266,"Iniciar" );
+	ili9488_draw_string(295 , 296,"Lavagem" );
+}
+
+// Pensar em como chamar isso no botão de fim - possivekmente com uma flag no mein mesmo (feio, mas é o possível)
+/*
+void callback_fim_menu(t_ciclo *c_novo, int Tenxa, int Tcentri, int Qenxa, int RPMcentri, int forte, int bolhas){
+	c_novo->nome = "Personalizado";
+		c_novo->enxagueTempo = Tenxa;
+		c_novo->enxagueQnt = Qenxa;
+		c_novo->centrifugacaoRPM = RPMcentri;
+		c_novo->centrifugacaoTempo = Tcentri;
+		c_novo->heavy = forte;
+		c_novo->bubblesOn = bolhas;
+	
+		
+}
+	*/
+	
+
+	
+	//ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+	//ili9488_draw_string(20 , 20,cicle.nome );
+
 
 void pin_toggle(Pio *pio, uint32_t mask){
 	if(pio_get_output_data_status(pio, mask))
@@ -706,10 +822,15 @@ int main(void)
 	
 
 	/* -----------------------------------------------------*/
-	t_botao botoes[] = {LavagemPesada, LavagemDiadia, LavagemRapida};
-		int nb1 = 3;
+	t_botao botoes[] = {LavagemPesada, LavagemDiadia, LavagemRapida, opcao};
+		int nb1 = 4;
 	t_botao botoes2[] = {playpause, volta};
 	int nb2 = 2;
+	// criar os botões de ciclo para as escolhas
+	t_botao botoes_menu[] = {enchague, centrifuga, playpause, volta};
+		int nbm = 4;
+	
+	
 	while (true) {
 		/* Check for any pending messages and run message handler if any
 		 * message is found in the queue */
@@ -732,16 +853,26 @@ int main(void)
 			tela_atual(c_diadia, botoes2, nb2);
 			flag_diadia = false;
 		}
+		if(flag_menu){
+			tela_menu(botoes_menu, nbm);
+			flag_menu = false;
+		}
 		
-		if(!flag_inicio){
+		if(!flag_inicio && !flag_menu){
 			if (mxt_is_message_pending(&device)) {
-				mxt_handler(&device, botoes2, nb2);
+				mxt_handler(&device, botoes_menu, nbm);
+			}
+			
+		}
+		if(flag_menu){
+			if (mxt_is_message_pending(&device)) {
+				mxt_handler(&device, botoes_menu, nbm);
 			}
 			
 		}
 		if (f_rtt_alarme){
 			uint16_t pllPreScale = (int) (((float) 32768) / 2.0);
-			uint32_t irqRTTvalue  = 4;
+			uint32_t irqRTTvalue  = 2;
 			// reinicia RTT para gerar um novo IRQ
 			
 			if(em_ciclo & !flag_pause){

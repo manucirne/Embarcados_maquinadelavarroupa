@@ -713,6 +713,12 @@
     <Compile Include="src\calibri_36.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\icones\home.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\icones\menu.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\icones\voltar.h">
       <SubType>compile</SubType>
     </Compile>
