@@ -101,7 +101,8 @@ SUBDIRS :=  \
 ../src/ASF/thirdparty/CMSIS/Lib/ \
 ../src/ASF/thirdparty/CMSIS/Lib/GCC/ \
 ../src/config/ \
-../src/icones/
+../src/icones/ \
+../src/icones/animabub/
 
 
 # Add inputs and outputs from these tool invocations to the build variables 

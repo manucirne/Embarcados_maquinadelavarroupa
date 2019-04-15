@@ -96,6 +96,8 @@
 #include "sourcecodepro_28.h"
 #include "calibri_36.h"
 #include "arial_72.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 
 #ifndef CONF_USART_SERIAL_H
@@ -114,10 +116,35 @@
 
 #endif/* CONF_USART_SERIAL_H_INCLUDED */
 
-#define LED_PIO           PIOC                  // periferico que controla o LED
-#define LED_PIO_ID        12                    // ID do periférico PIOC (controla LED)
-#define LED_PIO_IDX       8u                    // ID do LED no PIO
-#define LED_PIO_IDX_MASK  (1u << LED_PIO_IDX)   // Mascara para CONTROLARMOS o LED
+
+// LED
+#define LED_PIO      PIOC 
+#define LED_PIO_ID   ID_PIOC
+#define LED_IDX      8
+#define LED_PIO_IDX_MASK (1 << LED_IDX)
+
+// LED  MOTOR
+#define LED_PIO_MOTOR      PIOC
+#define LED_PIO_ID_MOTOR   ID_PIOC
+#define LED_IDX_MOTOR      17
+#define LED_PIO_IDX_MASK_MOTOR (1 << LED_IDX_MOTOR)
+
+
+
+// Botão PORTA
+#define BUT_PIO      PIOB
+#define BUT_PIO_ID   ID_PIOB
+#define BUT_IDX  2
+#define BUT_IDX_MASK (1 << BUT_IDX)
+
+// Botão TRANCA
+#define BUT_PIO_TRANCA      PIOC
+#define BUT_PIO_ID_TRANCA   ID_PIOC
+#define BUT_IDX_TRANCA  31
+#define BUT_IDX_MASK_TRANCA (1 << BUT_IDX)
+
+
+
 
 /**
  typedef struct {
@@ -129,16 +156,7 @@
  */
  
 
-#include "icones/diadia.h"
-#include "icones/play.h"
-#include "icones/lavagens.h"
-#include "icones/fast.h"
-#include "icones/sol.h"
-#include "icones/pesada.h"
-#include "icones/fundo.h"
-#include "icones/voltar.h"
-#include "icones/home.h"
-#include "icones/menu.h"
+#include "images.h"
 
 
 #define MAX_ENTRIES        3
@@ -165,6 +183,7 @@ void menu_callback(void);
 void inicio(void);
 void centrifuga_callback(void);
 void enxague_callback(void);
+void travar_callback(void);
 
 
 	
@@ -257,6 +276,7 @@ t_botao playpause = {
 	.image = &play,
 };
 
+
 t_botao volta = {
 	.x = 310,
 	.y = 20,
@@ -289,6 +309,15 @@ t_botao enxague = {
 	.image = &menu,
 };
 
+t_botao travar = {
+	.x = 410,
+	.y = 15,
+	.size = 48,
+	.p_handler = travar_callback,
+	.image = &lock,
+};
+
+
 
 
 
@@ -297,11 +326,10 @@ t_botao enxague = {
 
 
 /************************************************************************/
-/* variaveis globais                                                    */
+/* Flags                                                 */
 /************************************************************************/
 volatile Bool f_rtt_alarme = false;
 volatile Bool em_ciclo = false;
-//int passo =0;
 int cronometro =0;
 int t_atual =0 ;
 volatile Bool flag_inicio = true;
@@ -310,11 +338,15 @@ volatile Bool flag_diadia = false;
 volatile Bool flag_pesada = false;
 volatile Bool flag_pause = true;
 volatile Bool flag_menu = false;
+volatile Bool flag_animation = false;
+volatile Bool trava = false;
+volatile Bool flag_porta = false;
+volatile Bool flag_Fporta = false;
 
 char buffert [32];
 
 /************************************************************************/
-/* prototypes                                                           */
+/* Funções                                                          */
 /************************************************************************/
 void pin_toggle(Pio *pio, uint32_t mask);
 void io_init(void);
@@ -350,6 +382,7 @@ void rapida_callback(void){
 		printf(buf);
 		flag_inicio = false;
 		flag_rapida = true;
+		flag_animation = true;
 		
 }
 
@@ -359,6 +392,7 @@ void diadia_callback(void){
 		printf(buf);
 		flag_inicio = false;
 		flag_diadia = true;
+		flag_animation = true;
 		
 }
 
@@ -368,6 +402,7 @@ void pesada_callback(void){
 	printf(buf);
 	flag_inicio = false;
 	flag_pesada = true;
+	flag_animation = true;
 	
 }
 
@@ -396,14 +431,68 @@ void centrifuga_callback(void){
 
 void playpause_callback(void){
 	flag_pause = !flag_pause;
+	flag_animation = !flag_animation;
+	if(!flag_pause){
+		pio_set(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
+	}
+	else{
+		pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
+	}
 }
 
 void voltar_callback(void){
 	inicio();
 	flag_inicio = true;
 	flag_pause = true;
+	flag_animation = false;
+	pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
 }
 
+void travar_callback(void){
+	char buf[STRING_LENGTH];
+	sprintf(buf, "Travou\n");
+	printf(buf);
+	trava = !trava;
+}
+
+void porta_callback(){
+	flag_porta = !flag_porta;
+	
+		
+}
+
+void porta_aberta(){
+	char buf[STRING_LENGTH];
+	if(flag_porta){
+		sprintf(buf, "Portaaaaaaa\n");
+		printf(buf);
+		ili9488_draw_pixmap(travar.x,
+		travar.y,
+		travar.image->width,
+		travar.image->height,
+		travar.image->data);
+		if (!flag_inicio){
+			flag_pause = true;
+			pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
+			flag_Fporta = true;
+		}
+		
+	}
+
+	else{
+		ili9488_draw_pixmap(travar.x,
+		travar.y,
+		travar.image->width,
+		travar.image->height,
+		&blank.data);
+		if (flag_Fporta){
+			pio_set(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
+			flag_Fporta = false;
+			flag_pause = false;
+		}
+	}
+	
+}
 /************************************************************************/
 /* funcoes                                                              */
 /************************************************************************/
@@ -430,6 +519,12 @@ inicio(){
 	opcao.image->width,
 	opcao.image->height,
 	opcao.image->data);
+	/*ili9488_draw_pixmap(travar.x,
+	travar.y,
+	travar.image->width,
+	travar.image->height,
+	travar.image->data);*/
+
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	ili9488_draw_string(LavagemPesada.x + LavagemPesada.image->width/2 -30,
@@ -461,24 +556,35 @@ tela_atual(t_ciclo cicle, t_botao b[], int n){
 		b[i].image->data);
 	}
 	;
-						
+	/*ili9488_draw_pixmap(travar.x,
+	travar.y,
+	travar.image->width,
+	travar.image->height,
+	travar.image->data);*/
+	
+	char home[6] = "Home"; 
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	ili9488_draw_string(20 , 20,cicle.nome );
-	ili9488_draw_string(320 , 129,"Home" );
-	ili9488_draw_string(295 , 266,"Iniciar" );
-	ili9488_draw_string(295 , 296,"Lavagem" );
+	ili9488_draw_string(75 , 20,cicle.nome );
+	ili9488_draw_string(340 , 129,"Home" );
+	ili9488_draw_string(300 , 266,"Iniciar" );
+	ili9488_draw_string(300 , 296,"Lavagem" );
 }
 
+
+ 
 //animação tentativa tosca
 void animacao(tImage imagens[], int n ){
-	for(int i = 0; i < n, i++){
+	
+	for(int i = 0; i < n; i++){
 		ili9488_draw_pixmap(30,
 		30,
-		imagens[i]->width,
-		imagens[i]->height,
-		imagens[i]->data);
-		}
+		imagens[i].width,
+		imagens[i].height,
+		imagens[i].data);
+		delay_ms(100);
 	}
+	
+	
 }
 
 void tela_menu( t_botao b[], int n){
@@ -491,6 +597,12 @@ void tela_menu( t_botao b[], int n){
 		b[i].image->height,
 		b[i].image->data);
 	}
+	/*ili9488_draw_pixmap(travar.x,
+	travar.y,
+	travar.image->width,
+	travar.image->height,
+	travar.image->data);*/
+	
 	ili9488_draw_string(320 , 129,"Home" );
 	ili9488_draw_string(295 , 266,"Iniciar" );
 	ili9488_draw_string(295 , 296,"Lavagem" );
@@ -528,6 +640,8 @@ void io_init(void){
 	/* led */
 	pmc_enable_periph_clk(LED_PIO_ID);
 	pio_configure(LED_PIO, PIO_OUTPUT_0, LED_PIO_IDX_MASK, PIO_DEFAULT);
+	pio_configure(LED_PIO_ID_MOTOR, PIO_OUTPUT_0, LED_PIO_IDX_MASK_MOTOR, PIO_DEFAULT);
+	pio_set_output(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR, 0, 0, 0);
 }
 
 static float get_time_rtt(){
@@ -555,6 +669,49 @@ static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
 	rtt_enable_interrupt(RTT, RTT_MR_ALMIEN);
 }
 
+void BUT_init(void){
+ // Configura led
+ pmc_enable_periph_clk(LED_PIO_ID);
+ pio_configure(LED_PIO, PIO_OUTPUT_0, LED_PIO_IDX_MASK, PIO_DEFAULT);
+ // Inicializa clock do periférico PIO responsavel pelo botao
+ pmc_enable_periph_clk(BUT_PIO_ID);
+  //pmc_enable_periph_clk(BUT_PIO_ID_TRANCA);
+
+ // Configura PIO para lidar com o pino do botão como entrada
+ // com pull-up
+ //pio_configure(BUT_PIO_TRANCA, PIO_INPUT, BUT_IDX_MASK_TRANCA, PIO_PULLUP);
+ pio_configure(BUT_PIO, PIO_INPUT, BUT_IDX_MASK, PIO_PULLUP);
+
+ // Configura interrupção no pino referente ao botao e associa
+ // função de callback caso uma interrupção for gerada
+ // a função de callback é a: but_callback()
+ pio_handler_set(BUT_PIO,
+ BUT_PIO_ID,
+ BUT_IDX_MASK,
+ PIO_IT_FALL_EDGE,
+ porta_callback);
+ /*pio_handler_set(BUT_PIO_TRANCA,
+ BUT_PIO_ID_TRANCA,
+ BUT_IDX_MASK_TRANCA,
+ PIO_IT_FALL_EDGE,
+ travar_callback);
+*/
+
+ // Ativa interrupção
+ pio_enable_interrupt(BUT_PIO, BUT_IDX_MASK);
+ //pio_enable_interrupt(BUT_PIO_TRANCA, BUT_IDX_MASK_TRANCA);
+
+ // Configura NVIC para receber interrupcoes do PIO do botao
+ // com prioridade 4 (quanto mais próximo de 0 maior)
+ NVIC_EnableIRQ(BUT_PIO_ID);
+ NVIC_SetPriority(BUT_PIO_ID, 4); // Prioridade 4
+ 
+/*
+ NVIC_EnableIRQ(BUT_PIO_ID_TRANCA);
+ NVIC_SetPriority(BUT_PIO_ID_TRANCA, 4);*/ // Prioridade 4
+	
+};
+
 
 int processa_touch(t_botao  b[], t_botao  *rtn, uint N ,uint x, uint y ){
 	char buf[STRING_LENGTH];
@@ -562,8 +719,6 @@ int processa_touch(t_botao  b[], t_botao  *rtn, uint N ,uint x, uint y ){
 	printf( "entrou no touch");
 	
 	for(int i = 0;i < N;i++){
-		printf( "XT: %d  YT: %d /n", x, y);
-		printf( "BXT: %d  BYT: %d size: %d/n", b[i].x, b[i].y, b[i].size);
 		if(x >= (b[i].x) && x <= (b[i].x + b[i].size)) {
 			if(y >= (b[i].y) && y <= (b[i].y + b[i].size) ){
 				*rtn = b[i];
@@ -750,16 +905,14 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 		 // eixos trocados (quando na vertical LCD)
 		uint32_t conv_x = convert_axis_system_x(touch_event.x);
 		uint32_t conv_y = convert_axis_system_y(touch_event.y);
-		
+		printf("%d", touch_event.status);
+		int ultimo_status = touch_event.status;
 		/* Format a new entry in the data string that will be sent over USART */
 		sprintf(buf, "X:%3d Y:%3d \n", conv_x, conv_y);
 		
 		/* -----------------------------------------------------*/
 		t_botao bAtual;
-		//sprintf(buf, " processa touch");
-		if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y))
-			//sprintf(buf,bAtual.x);
-			//printf(buf);
+		if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y)&& (ultimo_status < 60))
 			bAtual.p_handler();
 		//update_screen(conv_x, conv_y);
 		/* -----------------------------------------------------*/
@@ -776,6 +929,48 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 	if (i > 0) {
 		usart_serial_write_packet(USART_SERIAL_EXAMPLE, (uint8_t *)tx_buf, strlen(tx_buf));
 	}
+}
+
+void proxima_pagina(struct mxt_device device, t_botao botoes[], int nb1, t_botao botoes2[], int nb2, t_botao botoes_menu[], int nbm){
+	if(flag_inicio){
+		if (mxt_is_message_pending(&device)) {
+			mxt_handler(&device, botoes, nb1);
+		}
+	}
+	
+	if(flag_pesada){
+		tela_atual(c_pesada, botoes2, nb2);
+		flag_pesada = false;
+		//while(flag_animation){
+		//animacao(bubs, nbubs);
+		//}
+	}
+	if(flag_rapida){
+		tela_atual(c_rapida, botoes2, nb2);
+		flag_rapida = false;
+	}
+	if(flag_diadia){
+		tela_atual(c_diadia, botoes2, nb2);
+		flag_diadia = false;
+	}
+	if(flag_menu){
+		tela_menu(botoes_menu, nbm);
+		flag_menu = false;
+	}
+	
+	if(!flag_inicio && !flag_menu){
+		if (mxt_is_message_pending(&device) && !trava) {
+			mxt_handler(&device, botoes_menu, nbm);
+		}
+		
+	}
+	if(flag_menu){
+		if (mxt_is_message_pending(&device) && !trava) {
+			mxt_handler(&device, botoes_menu, nbm);
+		}
+		
+	}
+	
 }
 
 
@@ -795,6 +990,7 @@ int main(void)
 	io_init();
 	board_init();  /* Initialize board */
 	configure_lcd();
+	BUT_init();
 	
 	
 	// Inicializa flags.
@@ -804,6 +1000,8 @@ int main(void)
 	flag_diadia = false;
 	flag_pesada = false;
 	flag_pause = true;
+	trava = false;
+	flag_porta = false;
 	
 	/* Initialize the mXT touch device */
 	
@@ -820,6 +1018,8 @@ int main(void)
 	
 	inicio();
 	
+	tImage bubs[] = {bubleanima1, bubleanima2, bubleanima3, bubleanima4, bubleanima5, bubleanima6, bubleanima7, bubleanima8, bubleanima9, bubleanima10, bubleanima11, bubleanima12, bubleanima13, bubleanima14};
+	int nbubs = 14;
 
 	/* -----------------------------------------------------*/
 	t_botao botoes[] = {LavagemPesada, LavagemDiadia, LavagemRapida, opcao};
@@ -830,66 +1030,40 @@ int main(void)
 	t_botao botoes_menu[] = {enxague, centrifuga, playpause, volta};
 		int nbm = 4;
 	
-	
+
+
 	while (true) {
 		/* Check for any pending messages and run message handler if any
 		 * message is found in the queue */
 		
-		if(flag_inicio){
-			if (mxt_is_message_pending(&device)) {
-				mxt_handler(&device, botoes, nb1);
-			}
-		}
+		proxima_pagina(device, botoes, nb1, botoes2, nb2, botoes_menu, nbm);
 		
-		if(flag_pesada){
-			tela_atual(c_pesada, botoes2, nb2);
-			flag_pesada = false;
-		}
-		if(flag_rapida){
-			tela_atual(c_rapida, botoes2, nb2);
-			flag_rapida = false;
-		}
-		if(flag_diadia){
-			tela_atual(c_diadia, botoes2, nb2);
-			flag_diadia = false;
-		}
-		if(flag_menu){
-			tela_menu(botoes_menu, nbm);
-			flag_menu = false;
-		}
 		
-		if(!flag_inicio && !flag_menu){
-			if (mxt_is_message_pending(&device)) {
-				mxt_handler(&device, botoes_menu, nbm);
-			}
-			
-		}
-		if(flag_menu){
-			if (mxt_is_message_pending(&device)) {
-				mxt_handler(&device, botoes_menu, nbm);
-			}
-			
-		}
+		porta_aberta();	
+
+		
+		
 		if (f_rtt_alarme){
 			uint16_t pllPreScale = (int) (((float) 32768) / 2.0);
 			uint32_t irqRTTvalue  = 2;
 			// reinicia RTT para gerar um novo IRQ
 			
-			if(em_ciclo & !flag_pause){
+			if(em_ciclo && !flag_pause){
 				sprintf(buffert,"%02d",t_atual - cronometro);
 				//ili9488_draw_string(80, 200,buffert );
-				 font_draw_text(&calibri_36, buffert, 80, 200, 1);
+				 font_draw_text(&arial_72, buffert, 75, 220, 1);
 				 if (mxt_is_message_pending(&device)) {
 					 mxt_handler(&device, botoes2, nb2);
 				 }
 				
 				if (cronometro == t_atual){
 					em_ciclo = false;
-					ili9488_draw_string(300, 250,"ACABOU!");
+					//ili9488_draw_string(300, 250,"ACABOU!");
 					cronometro = 0;
 					inicio();
 					flag_pause = true;
 					flag_inicio = true;
+					pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
 					
 				}
 				
