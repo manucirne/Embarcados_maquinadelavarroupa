@@ -98,6 +98,9 @@
 #include "arial_72.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "ciclos_e_botoes.h"
+#include "images.h"
+#include "bools_e_funcs.h"
 
 
 #ifndef CONF_USART_SERIAL_H
@@ -116,56 +119,6 @@
 
 #endif/* CONF_USART_SERIAL_H_INCLUDED */
 
-
-// LED
-#define LED_PIO      PIOC 
-#define LED_PIO_ID   ID_PIOC
-#define LED_IDX      8
-#define LED_PIO_IDX_MASK (1 << LED_IDX)
-
-// LED  MOTOR
-#define LED_PIO_MOTOR      PIOC
-#define LED_PIO_ID_MOTOR   ID_PIOC
-#define LED_IDX_MOTOR      17
-#define LED_PIO_IDX_MASK_MOTOR (1 << LED_IDX_MOTOR)
-
-// LED  PORTA ABERTA
-#define LED_PIO_PORTA      PIOB
-#define LED_PIO_ID_PORTA   ID_PIOB
-#define LED_IDX_PORTA      1
-#define LED_PIO_IDX_MASK_PORTA (1 << LED_IDX_PORTA)
-
-
-
-// Botão PORTA
-#define BUT_PIO      PIOB
-#define BUT_PIO_ID   ID_PIOB
-#define BUT_IDX  2
-#define BUT_IDX_MASK (1 << BUT_IDX)
-
-// Botão TRANCA
-
-#define BUT_PIO_TRANCA      PIOD
-#define BUT_PIO_ID_TRANCA   ID_PIOD
-#define BUT_IDX_TRANCA  28
-#define BUT_IDX_MASK_TRANCA (1 << BUT_IDX_TRANCA)
-
-
-
-
-/**
- typedef struct {
-	 const uint8_t *data;
-	 uint16_t width;
-	 uint16_t height;
-	 uint8_t dataSize;
- } tImage;
- */
- 
-
-#include "images.h"
-
-
 #define MAX_ENTRIES        3
 #define STRING_LENGTH     70
 
@@ -173,51 +126,9 @@
 
 #define MAQUINA1
 
-struct ili9488_opt_t g_ili9488_display_opt; // apagar
-const uint32_t BUTTON_W = 120;
-const uint32_t BUTTON_H = 150;
-const uint32_t BUTTON_BORDER = 2;
-const uint32_t BUTTON_X = ILI9488_LCD_WIDTH/4;
-const uint32_t BUTTON_Y = ILI9488_LCD_HEIGHT/4;
+struct ili9488_opt_t g_ili9488_display_opt;
 
-
-void pesada_callback(void);
-void rapida_callback(void);
-void diadia_callback(void);
-void playpause_callback(void);
-void voltar_callback(void);
-void menu_callback(void);
-void inicio(void);
-void centrifuga_callback(void);
-void enxague_callback(void);
-void travar_callback(void);
-void anterior_callback(void);
-void proximo_callback(void);
-void trava_imagem(void);
-void plus_callback(void);
-void less_callback(void);
-void fim_menu_callback(void);
-
-
-	
-/** \brief Touch event struct */
-
-typedef struct ciclo t_ciclo;
-
-struct ciclo{
-	char nome[32];           // nome do ciclo, para ser exibido
-	int  molhoTempo;		 // tempo de molho da roupa
-	int lavagemTempo;		 // Tempo de lavagem da roupa
-	int  enxagueTempo;       // tempo que fica em cada enxague
-	int  enxagueQnt;         // quantidade de enxagues
-	int  centrifugacaoRPM;   // velocidade da centrifugacao
-	int  centrifugacaoTempo; // tempo que centrifuga
-	char heavy;              // modo pesado de lavagem
-	char bubblesOn;  
-	
-	t_ciclo *previous;
-	t_ciclo *next;
-};
+//struct ciclos e botoes
 
 t_ciclo c_rapida = {.nome = "Rapido",
 	.molhoTempo = 3,
@@ -263,18 +174,6 @@ t_ciclo c_novo = {.nome = "Ciclo Personalizado",
 	.heavy = 1,
 	.bubblesOn = 1,
 };
-
-
-typedef struct botao t_botao;
-
-struct botao {
-	uint x;
-	uint y;
-	uint size;
-	tImage *image;
-	void (*p_handler)(void);
-};
-
 
 t_botao LavagemRapida={
 	.x = 170,
@@ -389,54 +288,14 @@ t_botao lessB = {
 };
 
 
-/************************************************************************/
-/* Flags                                                 */
-/************************************************************************/
-volatile Bool f_rtt_alarme = false;
-volatile Bool em_ciclo = false;
-int cronometro =0;
-int t_atual =0 ;
-volatile Bool flag_inicio = true;
-volatile Bool flag_rapida = false;
-volatile Bool flag_diadia = false;
-volatile Bool flag_pesada = false;
-volatile Bool flag_pause = true;
-volatile Bool flag_play = false;
-volatile Bool flag_menu = false;
-volatile Bool flag_animation = false;
-volatile Bool trava = false;
-volatile Bool flag_porta = false;
-volatile Bool flag_Fporta = false;
-volatile Bool flag_less = false;
-volatile Bool flag_plus = false;
-volatile Bool flag_enxa = false;
-volatile Bool flag_centri = false;
-volatile Bool flag_lava = false;
-volatile Bool flag_molho = false;
-volatile Bool flag_menu_desenha = false;
-volatile Bool flag_fim_menu = false;
-volatile int enxatempo = 0;
-volatile int lavatempo = 0;
-volatile int molhotempo = 0;
-volatile int centritempo = 0;
 
-volatile int pag_menu = 0;
 
 char buffert [32];
 
-/************************************************************************/
-/* Funções                                                          */
-/************************************************************************/
-void pin_toggle(Pio *pio, uint32_t mask);
-void io_init(void);
-static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
-void tela_atual(t_ciclo nome, t_botao b[], int n);
-void draw_screen(void);
-void inicio(void);
-void novo_ciclo(int Tenxa, int Tcentri, int Qenxa,int lavatempo, int molhotempo, int RPMcentri, int forte, int bolhas);
+
 
 /************************************************************************/
-/* interrupcoes                                                         */
+/* interrupcoes / callbacks                                                        */
 /************************************************************************/
 
 void RTT_Handler(void)
@@ -643,11 +502,12 @@ void porta_aberta(){
 	}
 	
 }
+
 /************************************************************************/
 /* funcoes                                                              */
 /************************************************************************/
 
-inicio(){
+void inicio(){
 	draw_screen();
 	trava_imagem();
 	ili9488_draw_pixmap(LavagemPesada.x,
@@ -692,7 +552,7 @@ inicio(){
 	"Menu" );
 	
 }
-tela_atual(t_ciclo cicle, t_botao b[], int n){
+void tela_atual(t_ciclo cicle, t_botao b[], int n){
 	
 	// contador if 1 enxague if 2 centrifugação e conta o tempo em cada uma
 	t_atual = cicle.enxagueTempo + cicle.lavagemTempo + cicle.centrifugacaoTempo + cicle.molhoTempo;
@@ -743,13 +603,11 @@ tela_atual(t_ciclo cicle, t_botao b[], int n){
 	ili9488_draw_string(20 , 220, "RPM de" );
 	ili9488_draw_string(20 , 240, "centrifugaao: " );
 	ili9488_draw_string(250 , 240, RPMC);
-	ili9488_draw_string(340 , 129,"Home" );
+	ili9488_draw_string(340 , 129,homeS );
 	ili9488_draw_string(300 , 266,"Iniciar" );
 	ili9488_draw_string(300 , 296,"Lavagem" );
 }
 
-
- 
 //animação tentativa tosca
 void animacao(tImage imagens[], int n ){
 	
@@ -766,7 +624,7 @@ void animacao(tImage imagens[], int n ){
 }
 
 void tela_menu(char nomes[][30], int n){
-	char buffert[7];
+	buffert[7];
 	char bufferq[7];
 	draw_screen();
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
@@ -812,14 +670,14 @@ void tela_menu(char nomes[][30], int n){
 		anterior.image->height,
 		anterior.image->data);
 	}
-	if(pag_menu != 3){
+	if(pag_menu != n-1){
 		ili9488_draw_pixmap(proximo.x,
 		proximo.y,
 		proximo.image->width,
 		proximo.image->height,
 		proximo.image->data);
 	}
-	if(pag_menu == 3){
+	if(pag_menu == n-1){
 		ili9488_draw_pixmap(fim_menu.x,
 		fim_menu.y,
 		fim_menu.image->width,
@@ -854,12 +712,11 @@ void fim_menu_callback(){
 	flag_fim_menu = true;
 }
 
-// Pensar em como chamar isso no botão de fim - possivekmente com uma flag no mein mesmo (feio, mas é o possível)
-void novo_ciclo(int Tenxa, int Tcentri, int Qenxa,int lavatempo, int molhotempo, int RPMcentri, int forte, int bolhas){
+void novo_ciclo(int Tenxa, int Tcentri, int Qenxa,int Tlava, int Tmolho, int RPMcentri, int forte, int bolhas){
 		c_novo.enxagueTempo = Tenxa;
 		c_novo.enxagueQnt = Qenxa;
-		c_novo.molhoTempo = molhotempo;
-		c_novo.lavagemTempo = lavatempo;
+		c_novo.molhoTempo = Tmolho;
+		c_novo.lavagemTempo = Tlava;
 		c_novo.centrifugacaoRPM = RPMcentri;
 		c_novo.centrifugacaoTempo = Tcentri;
 		c_novo.heavy = forte;
@@ -867,13 +724,6 @@ void novo_ciclo(int Tenxa, int Tcentri, int Qenxa,int lavatempo, int molhotempo,
 	
 		
 }
-	
-	
-
-	
-	//ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	//ili9488_draw_string(20 , 20,cicle.nome );
-
 
 void pin_toggle(Pio *pio, uint32_t mask){
 	if(pio_get_output_data_status(pio, mask))
@@ -892,9 +742,11 @@ void io_init(void){
 	pio_set_output(LED_PIO_PORTA, LED_PIO_IDX_MASK_PORTA, 0, 0, 0);
 }
 
+/*
 static float get_time_rtt(){
 	uint ul_previous_time = rtt_read_timer_value(RTT);
-}
+	return ul_previous_time;
+}*/
 
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
 {
@@ -962,11 +814,8 @@ void BUT_init(void){
 
 
 int processa_touch(t_botao  b[], t_botao  *rtn, uint N ,uint x, uint y ){
-	char buf[STRING_LENGTH];
-	
-	printf( "entrou no touch");
-	
-	for(int i = 0;i < N;i++){
+	printf( "entrou no touch");	
+	for(uint i = 0;i < N;i++){
 		if(x >= (b[i].x) && x <= (b[i].x + b[i].size)) {
 			if(y >= (b[i].y) && y <= (b[i].y + b[i].size) ){
 				*rtn = b[i];
@@ -1002,17 +851,6 @@ void font_draw_text(tFont *font, const char *text, int x, int y, int spacing) {
 		p++;
 	}
 }
-
-/**
- * \brief Set maXTouch configuration
- *
- * This function writes a set of predefined, optimal maXTouch configuration data
- * to the maXTouch Xplained Pro.
- *
- * \param device Pointer to mxt_device struct
- */
-
-
 
 
 static void mxt_init(struct mxt_device *device)
@@ -1114,8 +952,6 @@ void draw_screen(void) {
 	ili9488_draw_filled_rectangle(0, 0, 480, 320);
 }
 
-
-
 uint32_t convert_axis_system_x(uint32_t touch_y) {
 	// entrada: 4096 - 0 (sistema de coordenadas atual)
 	// saida: 0 - 320
@@ -1127,8 +963,6 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 	// saida: 0 - 320
 	return ILI9488_LCD_HEIGHT - ILI9488_LCD_HEIGHT*touch_x/4096;
 }
-
-
 
 void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 {
@@ -1156,7 +990,7 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 		printf("%d", touch_event.status);
 		int ultimo_status = touch_event.status;
 		/* Format a new entry in the data string that will be sent over USART */
-		sprintf(buf, "X:%3d Y:%3d \n", conv_x, conv_y);
+		//sprintf(buf, "X:%3d Y:%3d \n", conv_x, conv_y);
 		
 		/* -----------------------------------------------------*/
 		t_botao bAtual;
@@ -1226,6 +1060,7 @@ void proxima_pagina(struct mxt_device device, t_botao botoes[], int nb1, t_botao
 		tela_atual(c_novo, botoes2, nb2);
 		flag_fim_menu = false;
 		flag_menu = false;
+		pag_menu = 0;
 	}
 	
 }
@@ -1292,8 +1127,6 @@ int main(void)
 		int nbm = 6;
 	char nomes[][30] = {"Tempo de molho", "Tempo de lavagem", "Tempo de enxague", "Tempo de centrifugacao" };
 	int Nnomes = 4;
-
-	int muda = pag_menu;
 	while (true) {
 		/* Check for any pending messages and run message handler if any
 		 * message is found in the queue */

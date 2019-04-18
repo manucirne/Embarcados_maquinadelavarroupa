@@ -184,11 +184,11 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\sys\string.h \
  ../src/config/conf_board.h ../src/config/conf_example.h ../src/tfont.h \
  ../src/sourcecodepro_28.h ../src/calibri_36.h ../src/arial_72.h \
- ../src/images.h ../src/icones/diadia.h ../src/icones/play.h \
- ../src/icones/lavagens.h ../src/icones/fast.h ../src/icones/sol.h \
- ../src/icones/pesada.h ../src/icones/fundo.h ../src/icones/voltar.h \
- ../src/icones/home.h ../src/icones/menu.h ../src/icones/lock.h \
- ../src/icones/blank.h ../src/icones/lockopen.h \
+ ../src/ciclos_e_botoes.h ../src/images.h ../src/icones/diadia.h \
+ ../src/icones/play.h ../src/icones/lavagens.h ../src/icones/fast.h \
+ ../src/icones/sol.h ../src/icones/pesada.h ../src/icones/fundo.h \
+ ../src/icones/voltar.h ../src/icones/home.h ../src/icones/menu.h \
+ ../src/icones/lock.h ../src/icones/blank.h ../src/icones/lockopen.h \
  ../src/icones/lockclosed.h ../src/icones/key.h ../src/icones/proxima.h \
  ../src/icones/plus.h ../src/icones/less.h ../src/icones/opendoor.h \
  ../src/icones/animabub/bubleanima1.h \
@@ -204,7 +204,7 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  ../src/icones/animabub/bubleanima11.h \
  ../src/icones/animabub/bubleanima12.h \
  ../src/icones/animabub/bubleanima13.h \
- ../src/icones/animabub/bubleanima14.h
+ ../src/icones/animabub/bubleanima14.h ../src/bools_e_funcs.h
 
 ../src/asf.h:
 
@@ -604,6 +604,8 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/arial_72.h:
 
+../src/ciclos_e_botoes.h:
+
 ../src/images.h:
 
 ../src/icones/diadia.h:
@@ -671,3 +673,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/icones/animabub/bubleanima13.h:
 
 ../src/icones/animabub/bubleanima14.h:
+
+../src/bools_e_funcs.h:

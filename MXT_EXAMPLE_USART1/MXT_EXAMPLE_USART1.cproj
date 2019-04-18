@@ -718,6 +718,9 @@
     <Compile Include="src\calibri_36.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\ciclos_e_botoes.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\icones\animabub\bubleanima1.h">
       <SubType>compile</SubType>
     </Compile>
@@ -797,6 +800,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\images.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\bools_e_funcs.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\sourcecodepro_28.h">
