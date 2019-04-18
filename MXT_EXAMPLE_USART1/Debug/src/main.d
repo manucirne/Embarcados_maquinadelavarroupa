@@ -188,7 +188,10 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  ../src/icones/lavagens.h ../src/icones/fast.h ../src/icones/sol.h \
  ../src/icones/pesada.h ../src/icones/fundo.h ../src/icones/voltar.h \
  ../src/icones/home.h ../src/icones/menu.h ../src/icones/lock.h \
- ../src/icones/blank.h ../src/icones/animabub/bubleanima1.h \
+ ../src/icones/blank.h ../src/icones/lockopen.h \
+ ../src/icones/lockclosed.h ../src/icones/key.h ../src/icones/proxima.h \
+ ../src/icones/plus.h ../src/icones/less.h ../src/icones/opendoor.h \
+ ../src/icones/animabub/bubleanima1.h \
  ../src/icones/animabub/bubleanima2.h \
  ../src/icones/animabub/bubleanima3.h \
  ../src/icones/animabub/bubleanima4.h \
@@ -626,6 +629,20 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/icones/lock.h:
 
 ../src/icones/blank.h:
+
+../src/icones/lockopen.h:
+
+../src/icones/lockclosed.h:
+
+../src/icones/key.h:
+
+../src/icones/proxima.h:
+
+../src/icones/plus.h:
+
+../src/icones/less.h:
+
+../src/icones/opendoor.h:
 
 ../src/icones/animabub/bubleanima1.h:
 

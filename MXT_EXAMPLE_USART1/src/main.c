@@ -129,6 +129,12 @@
 #define LED_IDX_MOTOR      17
 #define LED_PIO_IDX_MASK_MOTOR (1 << LED_IDX_MOTOR)
 
+// LED  PORTA ABERTA
+#define LED_PIO_PORTA      PIOB
+#define LED_PIO_ID_PORTA   ID_PIOB
+#define LED_IDX_PORTA      1
+#define LED_PIO_IDX_MASK_PORTA (1 << LED_IDX_PORTA)
+
 
 
 // Botão PORTA
@@ -138,10 +144,11 @@
 #define BUT_IDX_MASK (1 << BUT_IDX)
 
 // Botão TRANCA
-#define BUT_PIO_TRANCA      PIOC
-#define BUT_PIO_ID_TRANCA   ID_PIOC
-#define BUT_IDX_TRANCA  31
-#define BUT_IDX_MASK_TRANCA (1 << BUT_IDX)
+
+#define BUT_PIO_TRANCA      PIOD
+#define BUT_PIO_ID_TRANCA   ID_PIOD
+#define BUT_IDX_TRANCA  28
+#define BUT_IDX_MASK_TRANCA (1 << BUT_IDX_TRANCA)
 
 
 
@@ -184,6 +191,12 @@ void inicio(void);
 void centrifuga_callback(void);
 void enxague_callback(void);
 void travar_callback(void);
+void anterior_callback(void);
+void proximo_callback(void);
+void trava_imagem(void);
+void plus_callback(void);
+void less_callback(void);
+void fim_menu_callback(void);
 
 
 	
@@ -193,6 +206,8 @@ typedef struct ciclo t_ciclo;
 
 struct ciclo{
 	char nome[32];           // nome do ciclo, para ser exibido
+	int  molhoTempo;		 // tempo de molho da roupa
+	int lavagemTempo;		 // Tempo de lavagem da roupa
 	int  enxagueTempo;       // tempo que fica em cada enxague
 	int  enxagueQnt;         // quantidade de enxagues
 	int  centrifugacaoRPM;   // velocidade da centrifugacao
@@ -205,8 +220,10 @@ struct ciclo{
 };
 
 t_ciclo c_rapida = {.nome = "Rapido",
+	.molhoTempo = 3,
+	.lavagemTempo = 4,
 	.enxagueTempo = 5,
-	.enxagueQnt = 3,
+	.enxagueQnt = 1,
 	.centrifugacaoRPM = 900,
 	.centrifugacaoTempo = 5,
 	.heavy = 0,
@@ -215,6 +232,8 @@ t_ciclo c_rapida = {.nome = "Rapido",
 };
 
 t_ciclo c_diadia = {.nome = "Diario",
+	.molhoTempo = 5,
+	.lavagemTempo = 7,
 	.enxagueTempo = 15,
 	.enxagueQnt = 2,
 	.centrifugacaoRPM = 1200,
@@ -224,10 +243,23 @@ t_ciclo c_diadia = {.nome = "Diario",
 };
 
 t_ciclo c_pesada = {.nome = "Pesado",
+	.molhoTempo = 6,
+	.lavagemTempo = 10,
 	.enxagueTempo = 10,
 	.enxagueQnt = 3,
 	.centrifugacaoRPM = 1200,
 	.centrifugacaoTempo = 10,
+	.heavy = 1,
+	.bubblesOn = 1,
+};
+
+t_ciclo c_novo = {.nome = "Ciclo Personalizado",
+	.molhoTempo = 0,
+	.lavagemTempo = 0,
+	.enxagueTempo = 0,
+	.enxagueQnt = 0,
+	.centrifugacaoRPM = 1200,
+	.centrifugacaoTempo = 0,
 	.heavy = 1,
 	.bubblesOn = 1,
 };
@@ -275,14 +307,37 @@ t_botao playpause = {
 	.p_handler = playpause_callback,
 	.image = &play,
 };
+t_botao fim_menu = {
+	.x = 310,
+	.y = 170,
+	.size = 100,
+	.p_handler = fim_menu_callback,
+	.image = &play,
+};
 
 
-t_botao volta = {
+t_botao homeB = {
 	.x = 310,
 	.y = 20,
 	.size = 100,
 	.p_handler = voltar_callback,
 	.image = &home,
+};
+
+t_botao anterior = {
+	.x = 0,
+	.y = 120,
+	.size = 100,
+	.p_handler = anterior_callback,
+	.image = &voltar,
+};
+
+t_botao proximo = {
+	.x = 380,
+	.y = 120,
+	.size = 100,
+	.p_handler = proximo_callback,
+	.image = &proxima,
 };
 
 t_botao opcao = {
@@ -317,12 +372,21 @@ t_botao travar = {
 	.image = &lock,
 };
 
+t_botao plusB = {
+	.x = 200,
+	.y = 100,
+	.size = 48,
+	.p_handler = plus_callback,
+	.image = &plus,
+};
 
-
-
-
-
-
+t_botao lessB = {
+	.x = 200,
+	.y = 220,
+	.size = 48,
+	.p_handler = less_callback,
+	.image = &less,
+};
 
 
 /************************************************************************/
@@ -337,11 +401,26 @@ volatile Bool flag_rapida = false;
 volatile Bool flag_diadia = false;
 volatile Bool flag_pesada = false;
 volatile Bool flag_pause = true;
+volatile Bool flag_play = false;
 volatile Bool flag_menu = false;
 volatile Bool flag_animation = false;
 volatile Bool trava = false;
 volatile Bool flag_porta = false;
 volatile Bool flag_Fporta = false;
+volatile Bool flag_less = false;
+volatile Bool flag_plus = false;
+volatile Bool flag_enxa = false;
+volatile Bool flag_centri = false;
+volatile Bool flag_lava = false;
+volatile Bool flag_molho = false;
+volatile Bool flag_menu_desenha = false;
+volatile Bool flag_fim_menu = false;
+volatile int enxatempo = 0;
+volatile int lavatempo = 0;
+volatile int molhotempo = 0;
+volatile int centritempo = 0;
+
+volatile int pag_menu = 0;
 
 char buffert [32];
 
@@ -354,6 +433,7 @@ static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
 void tela_atual(t_ciclo nome, t_botao b[], int n);
 void draw_screen(void);
 void inicio(void);
+void novo_ciclo(int Tenxa, int Tcentri, int Qenxa,int lavatempo, int molhotempo, int RPMcentri, int forte, int bolhas);
 
 /************************************************************************/
 /* interrupcoes                                                         */
@@ -407,11 +487,27 @@ void pesada_callback(void){
 }
 
 void menu_callback(void){
-	char buf[STRING_LENGTH];
-	sprintf(buf, "entrou no menu\n");
-	printf(buf);
 	flag_inicio = false;
 	flag_menu = true;
+	flag_menu_desenha = true;
+	
+}
+
+void anterior_callback(void){
+	pag_menu -= 1;
+	flag_menu_desenha = true;
+	if (pag_menu <= 0){
+		pag_menu = 0;
+	}
+	
+}
+
+void proximo_callback(void){
+	pag_menu += 1;
+	flag_menu_desenha = true;
+	if (pag_menu >= 3){
+		pag_menu = 3;
+	}
 	
 }
 
@@ -432,8 +528,11 @@ void centrifuga_callback(void){
 void playpause_callback(void){
 	flag_pause = !flag_pause;
 	flag_animation = !flag_animation;
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+	ili9488_draw_filled_rectangle(20, 60, 285, 300);
 	if(!flag_pause){
 		pio_set(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
+		flag_play = true;
 	}
 	else{
 		pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
@@ -445,47 +544,98 @@ void voltar_callback(void){
 	flag_inicio = true;
 	flag_pause = true;
 	flag_animation = false;
+	flag_menu = false;
 	pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
 }
 
 void travar_callback(void){
-	char buf[STRING_LENGTH];
-	sprintf(buf, "Travou\n");
-	printf(buf);
 	trava = !trava;
+}
+
+void plus_callback(void){
+	if(flag_centri){
+		centritempo += 1;
+	}
+	if(flag_molho){
+		molhotempo += 1;
+	}
+	if(flag_lava){
+		lavatempo += 1;
+	}
+	if(flag_enxa){
+		enxatempo += 1;
+	}
+	flag_menu_desenha = true;
+	flag_plus = true;
+}
+
+void less_callback(void){
+	if(flag_centri){
+		centritempo -= 1;
+	}
+	if(flag_molho){
+		molhotempo -= 1;
+	}
+	if(flag_lava){
+		lavatempo -= 1;
+	}
+	if(flag_enxa){
+		enxatempo -= 1;
+	}
+	flag_menu_desenha = true;
+	flag_less = true;
+}
+
+void trava_imagem(void){
+	if(trava){
+		ili9488_draw_pixmap(435,
+		70,
+		lockclosed.width,
+		lockclosed.height,
+		lockclosed.data);
+	}
+	else{
+		ili9488_draw_pixmap(435,
+		70,
+		lockopen.width,
+		lockopen.height,
+		lockopen.data);
+	}
 }
 
 void porta_callback(){
 	flag_porta = !flag_porta;
+	if (flag_porta && !trava){
+		pio_set(LED_PIO_PORTA, LED_PIO_IDX_MASK_PORTA);
+	}
+	else{
+		pio_clear(LED_PIO_PORTA, LED_PIO_IDX_MASK_PORTA);
+	}
 	
 		
 }
 
 void porta_aberta(){
-	char buf[STRING_LENGTH];
 	if(flag_porta){
-		sprintf(buf, "Portaaaaaaa\n");
-		printf(buf);
-		ili9488_draw_pixmap(travar.x,
-		travar.y,
-		travar.image->width,
-		travar.image->height,
-		travar.image->data);
+		ili9488_draw_pixmap(435,
+		15,
+		opendoor.width,
+		opendoor.height,
+		opendoor.data);
 		if (!flag_inicio){
 			flag_pause = true;
 			pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
-			flag_Fporta = true;
+			if(flag_play){
+				flag_Fporta = true;
+			}
 		}
 		
 	}
 
 	else{
-		ili9488_draw_pixmap(travar.x,
-		travar.y,
-		travar.image->width,
-		travar.image->height,
-		&blank.data);
-		if (flag_Fporta){
+		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+		ili9488_draw_filled_rectangle(435, 15,435 + opendoor.width, 15 + opendoor.height);
+		if (flag_Fporta && flag_play){
 			pio_set(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
 			flag_Fporta = false;
 			flag_pause = false;
@@ -499,6 +649,7 @@ void porta_aberta(){
 
 inicio(){
 	draw_screen();
+	trava_imagem();
 	ili9488_draw_pixmap(LavagemPesada.x,
 	LavagemPesada.y,
 	LavagemPesada.image->width,
@@ -544,7 +695,7 @@ inicio(){
 tela_atual(t_ciclo cicle, t_botao b[], int n){
 	
 	// contador if 1 enxague if 2 centrifugação e conta o tempo em cada uma
-	t_atual= cicle.enxagueTempo;
+	t_atual = cicle.enxagueTempo + cicle.lavagemTempo + cicle.centrifugacaoTempo + cicle.molhoTempo;
 	em_ciclo = true;
 	
 	draw_screen();
@@ -561,10 +712,37 @@ tela_atual(t_ciclo cicle, t_botao b[], int n){
 	travar.image->width,
 	travar.image->height,
 	travar.image->data);*/
-	
-	char home[6] = "Home"; 
+	trava_imagem();
+	char tempoM[7];
+	itoa(cicle.molhoTempo, tempoM, 10);
+	char tempoL[7];
+	itoa(cicle.lavagemTempo, tempoL, 10);
+	char tempoE[7];
+	itoa(cicle.enxagueTempo, tempoE, 10);
+	char quantiE[7];
+	itoa(cicle.enxagueQnt, quantiE, 10);
+	char tempoC[7];
+	itoa(cicle.centrifugacaoTempo, tempoC, 10);
+	char RPMC[7];
+	itoa(cicle.centrifugacaoRPM, RPMC, 10);
+	char homeS[6] = "Home"; 
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	ili9488_draw_string(75 , 20,cicle.nome );
+	ili9488_draw_string(75 , 20,cicle.nome);
+	ili9488_draw_string(20 , 80, "Tempo de molho: ");
+	ili9488_draw_string(250 , 80, tempoM);
+	ili9488_draw_string(20 , 100, "Tempo de lavagem: " );
+	ili9488_draw_string(250 , 100, tempoL);
+	ili9488_draw_string(20 , 120, "Tempo de enxague: " );
+	ili9488_draw_string(250 , 120, tempoE);
+	ili9488_draw_string(20 , 140, "Quantidade " );
+	ili9488_draw_string(20 , 160, "de enxague: " );
+	ili9488_draw_string(250 , 160, quantiE);
+	ili9488_draw_string(20 , 180, "Tempo de" );
+	ili9488_draw_string(20 , 200, "centrifugacao: " );
+	ili9488_draw_string(250 , 200, tempoC);
+	ili9488_draw_string(20 , 220, "RPM de" );
+	ili9488_draw_string(20 , 240, "centrifugaao: " );
+	ili9488_draw_string(250 , 240, RPMC);
 	ili9488_draw_string(340 , 129,"Home" );
 	ili9488_draw_string(300 , 266,"Iniciar" );
 	ili9488_draw_string(300 , 296,"Lavagem" );
@@ -587,41 +765,109 @@ void animacao(tImage imagens[], int n ){
 	
 }
 
-void tela_menu( t_botao b[], int n){
-	
+void tela_menu(char nomes[][30], int n){
+	char buffert[7];
+	char bufferq[7];
 	draw_screen();
-	for (int i = 0; i < n; i++){
-		ili9488_draw_pixmap(b[i].x,
-		b[i].y,
-		b[i].image->width,
-		b[i].image->height,
-		b[i].image->data);
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+	ili9488_draw_string(50 , 20, nomes[pag_menu] );
+	if(pag_menu == 3){
+		itoa(centritempo, buffert, 10);
+		ili9488_draw_string(200 , 170, buffert);
+		flag_centri = true;
+		flag_molho = false;
+		flag_lava = false;
+		flag_enxa = false;
+
 	}
-	/*ili9488_draw_pixmap(travar.x,
-	travar.y,
-	travar.image->width,
-	travar.image->height,
-	travar.image->data);*/
+	if(pag_menu == 0){
+		flag_centri = false;
+		flag_molho = true;
+		flag_lava = false;
+		flag_enxa = false;
+		itoa(molhotempo, buffert, 10);
+		ili9488_draw_string(200 , 170, buffert);
+	}
+	if(pag_menu == 1){
+		flag_centri = false;
+		flag_molho = false;
+		flag_lava = true;
+		flag_enxa = false;
+		itoa(lavatempo, buffert, 10);
+		ili9488_draw_string(200 , 170, buffert);
+	}
+	if(pag_menu == 2){
+		flag_centri = false;
+		flag_molho = false;
+		flag_lava = false;
+		flag_enxa = true;
+		itoa(enxatempo, buffert, 10);
+		ili9488_draw_string(200 , 170, buffert);
+	}
+	
+	if(pag_menu != 0){
+		ili9488_draw_pixmap(anterior.x,
+		anterior.y,
+		anterior.image->width,
+		anterior.image->height,
+		anterior.image->data);
+	}
+	if(pag_menu != 3){
+		ili9488_draw_pixmap(proximo.x,
+		proximo.y,
+		proximo.image->width,
+		proximo.image->height,
+		proximo.image->data);
+	}
+	if(pag_menu == 3){
+		ili9488_draw_pixmap(fim_menu.x,
+		fim_menu.y,
+		fim_menu.image->width,
+		fim_menu.image->height,
+		fim_menu.image->data);
+		
+	}
+	
+	trava_imagem();
+	ili9488_draw_pixmap(homeB.x,
+	homeB.y,
+	homeB.image->width,
+	homeB.image->height,
+	homeB.image->data);
+	
+	ili9488_draw_pixmap(plusB.x,
+	plusB.y,
+	plusB.image->width,
+	plusB.image->height,
+	plusB.image->data);
+	ili9488_draw_pixmap(lessB.x,
+	lessB.y,
+	lessB.image->width,
+	lessB.image->height,
+	lessB.image->data);
+	
 	
 	ili9488_draw_string(320 , 129,"Home" );
-	ili9488_draw_string(295 , 266,"Iniciar" );
-	ili9488_draw_string(295 , 296,"Lavagem" );
+}
+
+void fim_menu_callback(){
+	flag_fim_menu = true;
 }
 
 // Pensar em como chamar isso no botão de fim - possivekmente com uma flag no mein mesmo (feio, mas é o possível)
-/*
-void callback_fim_menu(t_ciclo *c_novo, int Tenxa, int Tcentri, int Qenxa, int RPMcentri, int forte, int bolhas){
-	c_novo->nome = "Personalizado";
-		c_novo->enxagueTempo = Tenxa;
-		c_novo->enxagueQnt = Qenxa;
-		c_novo->centrifugacaoRPM = RPMcentri;
-		c_novo->centrifugacaoTempo = Tcentri;
-		c_novo->heavy = forte;
-		c_novo->bubblesOn = bolhas;
+void novo_ciclo(int Tenxa, int Tcentri, int Qenxa,int lavatempo, int molhotempo, int RPMcentri, int forte, int bolhas){
+		c_novo.enxagueTempo = Tenxa;
+		c_novo.enxagueQnt = Qenxa;
+		c_novo.molhoTempo = molhotempo;
+		c_novo.lavagemTempo = lavatempo;
+		c_novo.centrifugacaoRPM = RPMcentri;
+		c_novo.centrifugacaoTempo = Tcentri;
+		c_novo.heavy = forte;
+		c_novo.bubblesOn = bolhas;
 	
 		
 }
-	*/
+	
 	
 
 	
@@ -642,6 +888,8 @@ void io_init(void){
 	pio_configure(LED_PIO, PIO_OUTPUT_0, LED_PIO_IDX_MASK, PIO_DEFAULT);
 	pio_configure(LED_PIO_ID_MOTOR, PIO_OUTPUT_0, LED_PIO_IDX_MASK_MOTOR, PIO_DEFAULT);
 	pio_set_output(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR, 0, 0, 0);
+	pio_configure(LED_PIO_ID_PORTA, PIO_OUTPUT_0, LED_PIO_IDX_MASK_PORTA, PIO_DEFAULT);
+	pio_set_output(LED_PIO_PORTA, LED_PIO_IDX_MASK_PORTA, 0, 0, 0);
 }
 
 static float get_time_rtt(){
@@ -675,11 +923,11 @@ void BUT_init(void){
  pio_configure(LED_PIO, PIO_OUTPUT_0, LED_PIO_IDX_MASK, PIO_DEFAULT);
  // Inicializa clock do periférico PIO responsavel pelo botao
  pmc_enable_periph_clk(BUT_PIO_ID);
-  //pmc_enable_periph_clk(BUT_PIO_ID_TRANCA);
+ pmc_enable_periph_clk(BUT_PIO_ID_TRANCA);
 
  // Configura PIO para lidar com o pino do botão como entrada
  // com pull-up
- //pio_configure(BUT_PIO_TRANCA, PIO_INPUT, BUT_IDX_MASK_TRANCA, PIO_PULLUP);
+ pio_configure(BUT_PIO_TRANCA, PIO_INPUT, BUT_IDX_MASK_TRANCA, PIO_PULLUP);
  pio_configure(BUT_PIO, PIO_INPUT, BUT_IDX_MASK, PIO_PULLUP);
 
  // Configura interrupção no pino referente ao botao e associa
@@ -690,25 +938,25 @@ void BUT_init(void){
  BUT_IDX_MASK,
  PIO_IT_FALL_EDGE,
  porta_callback);
- /*pio_handler_set(BUT_PIO_TRANCA,
+ 
+ pio_handler_set(BUT_PIO_TRANCA,
  BUT_PIO_ID_TRANCA,
  BUT_IDX_MASK_TRANCA,
  PIO_IT_FALL_EDGE,
  travar_callback);
-*/
+
 
  // Ativa interrupção
  pio_enable_interrupt(BUT_PIO, BUT_IDX_MASK);
- //pio_enable_interrupt(BUT_PIO_TRANCA, BUT_IDX_MASK_TRANCA);
+ pio_enable_interrupt(BUT_PIO_TRANCA, BUT_IDX_MASK_TRANCA);
 
  // Configura NVIC para receber interrupcoes do PIO do botao
  // com prioridade 4 (quanto mais próximo de 0 maior)
  NVIC_EnableIRQ(BUT_PIO_ID);
  NVIC_SetPriority(BUT_PIO_ID, 4); // Prioridade 4
  
-/*
  NVIC_EnableIRQ(BUT_PIO_ID_TRANCA);
- NVIC_SetPriority(BUT_PIO_ID_TRANCA, 4);*/ // Prioridade 4
+ NVIC_SetPriority(BUT_PIO_ID_TRANCA, 5); // Prioridade 4
 	
 };
 
@@ -912,7 +1160,7 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 		
 		/* -----------------------------------------------------*/
 		t_botao bAtual;
-		if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y)&& (ultimo_status < 60))
+		if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y) && (ultimo_status < 60))
 			bAtual.p_handler();
 		//update_screen(conv_x, conv_y);
 		/* -----------------------------------------------------*/
@@ -931,9 +1179,9 @@ void mxt_handler(struct mxt_device *device, t_botao botoes[], uint Nbotoes)
 	}
 }
 
-void proxima_pagina(struct mxt_device device, t_botao botoes[], int nb1, t_botao botoes2[], int nb2, t_botao botoes_menu[], int nbm){
+void proxima_pagina(struct mxt_device device, t_botao botoes[], int nb1, t_botao botoes2[], int nb2, t_botao botoes_menu[], int nbm, char nomes[][30], int Nnomes){
 	if(flag_inicio){
-		if (mxt_is_message_pending(&device)) {
+		if (mxt_is_message_pending(&device) && !trava) {
 			mxt_handler(&device, botoes, nb1);
 		}
 	}
@@ -953,22 +1201,31 @@ void proxima_pagina(struct mxt_device device, t_botao botoes[], int nb1, t_botao
 		tela_atual(c_diadia, botoes2, nb2);
 		flag_diadia = false;
 	}
-	if(flag_menu){
-		tela_menu(botoes_menu, nbm);
-		flag_menu = false;
+	if(flag_menu_desenha){
+		tela_menu(nomes,Nnomes);
+		flag_menu_desenha = false;
 	}
 	
 	if(!flag_inicio && !flag_menu){
 		if (mxt_is_message_pending(&device) && !trava) {
-			mxt_handler(&device, botoes_menu, nbm);
+			mxt_handler(&device, botoes2, nb2);
 		}
 		
 	}
 	if(flag_menu){
-		if (mxt_is_message_pending(&device) && !trava) {
+		if (mxt_is_message_pending(&device) && !trava && (pag_menu == 3)) {
 			mxt_handler(&device, botoes_menu, nbm);
 		}
-		
+		if (mxt_is_message_pending(&device) && !trava && (pag_menu != 3)) {
+			mxt_handler(&device, botoes_menu, nbm-1);
+		}
+	}
+	
+	if(flag_fim_menu){
+		novo_ciclo(enxatempo, centritempo, lavatempo, molhotempo, 0, 0, 1, 1);
+		tela_atual(c_novo, botoes2, nb2);
+		flag_fim_menu = false;
+		flag_menu = false;
 	}
 	
 }
@@ -1002,6 +1259,9 @@ int main(void)
 	flag_pause = true;
 	trava = false;
 	flag_porta = false;
+	flag_play = false;
+	flag_menu_desenha = false;
+	flag_fim_menu = false;
 	
 	/* Initialize the mXT touch device */
 	
@@ -1017,6 +1277,7 @@ int main(void)
 	
 	
 	inicio();
+	pio_clear(LED_PIO_PORTA, LED_PIO_IDX_MASK_PORTA);
 	
 	tImage bubs[] = {bubleanima1, bubleanima2, bubleanima3, bubleanima4, bubleanima5, bubleanima6, bubleanima7, bubleanima8, bubleanima9, bubleanima10, bubleanima11, bubleanima12, bubleanima13, bubleanima14};
 	int nbubs = 14;
@@ -1024,22 +1285,27 @@ int main(void)
 	/* -----------------------------------------------------*/
 	t_botao botoes[] = {LavagemPesada, LavagemDiadia, LavagemRapida, opcao};
 		int nb1 = 4;
-	t_botao botoes2[] = {playpause, volta};
+	t_botao botoes2[] = {playpause, homeB};
 	int nb2 = 2;
 	// criar os botões de ciclo para as escolhas
-	t_botao botoes_menu[] = {enxague, centrifuga, playpause, volta};
-		int nbm = 4;
-	
+	t_botao botoes_menu[] = {homeB, proximo, anterior, plusB, lessB, fim_menu};
+		int nbm = 6;
+	char nomes[][30] = {"Tempo de molho", "Tempo de lavagem", "Tempo de enxague", "Tempo de centrifugacao" };
+	int Nnomes = 4;
 
-
+	int muda = pag_menu;
 	while (true) {
 		/* Check for any pending messages and run message handler if any
 		 * message is found in the queue */
 		
-		proxima_pagina(device, botoes, nb1, botoes2, nb2, botoes_menu, nbm);
-		
-		
-		porta_aberta();	
+		proxima_pagina(device, botoes, nb1, botoes2, nb2, botoes_menu, nbm, nomes, Nnomes);
+		if(flag_fim_menu){
+			proxima_pagina(device, botoes, nb1, botoes2, nb2, botoes_menu, nbm, nomes, Nnomes);
+		}
+		if(!trava){
+			porta_aberta();	
+		}
+		trava_imagem();
 
 		
 		
@@ -1063,6 +1329,11 @@ int main(void)
 					inicio();
 					flag_pause = true;
 					flag_inicio = true;
+					flag_play = false;
+					enxatempo = 0;
+					lavatempo = 0;
+					molhotempo = 0;
+					centritempo = 0;
 					pio_clear(LED_PIO_MOTOR, LED_PIO_IDX_MASK_MOTOR);
 					
 				}
