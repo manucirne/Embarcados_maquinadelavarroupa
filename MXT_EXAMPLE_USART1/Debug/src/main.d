@@ -204,7 +204,8 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  ../src/icones/animabub/bubleanima11.h \
  ../src/icones/animabub/bubleanima12.h \
  ../src/icones/animabub/bubleanima13.h \
- ../src/icones/animabub/bubleanima14.h ../src/bools_e_funcs.h
+ ../src/icones/animabub/bubleanima14.h ../src/bools_e_funcs.h \
+ ../src/botoes_def.h ../src/ciclos_def.h
 
 ../src/asf.h:
 
@@ -675,3 +676,7 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/icones/animabub/bubleanima14.h:
 
 ../src/bools_e_funcs.h:
+
+../src/botoes_def.h:
+
+../src/ciclos_def.h:

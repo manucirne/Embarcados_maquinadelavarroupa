@@ -45,7 +45,7 @@
 /** Stop bits setting */
 #define USART_SERIAL_STOP_BIT             US_MR_NBSTOP_1_BIT
 
-#endif/* CONF_USART_SERIAL_H_INCLUDED */
+#endif /* CONF_USART_SERIAL_H_INCLUDED */
 
 
 

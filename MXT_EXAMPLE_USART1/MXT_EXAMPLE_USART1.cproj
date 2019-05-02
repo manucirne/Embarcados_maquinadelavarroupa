@@ -715,7 +715,13 @@
     <Compile Include="src\ASF\sam\drivers\rtc\rtc.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\botoes_def.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\calibri_36.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ciclos_def.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ciclos_e_botoes.h">

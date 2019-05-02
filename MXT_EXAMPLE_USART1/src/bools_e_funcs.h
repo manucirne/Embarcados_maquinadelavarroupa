@@ -13,8 +13,8 @@
 /************************************************************************/
 volatile Bool f_rtt_alarme = false;
 volatile Bool em_ciclo = false;
-int cronometro =0;
-int t_atual =0 ;
+volatile int cronometro =0;
+volatile int t_atual =0 ;
 volatile Bool flag_inicio = true;
 volatile Bool flag_rapida = false;
 volatile Bool flag_diadia = false;
@@ -42,8 +42,14 @@ volatile int enxatempo = 0;
 volatile int lavatempo = 0;
 volatile int molhotempo = 0;
 volatile int centritempo = 0;
-
+volatile int trava_count = 0;
 volatile int pag_menu = 0;
+#define pag_molho  0
+#define pag_lava  1
+#define pag_enxa  2
+#define pag_centri  3
+#define xLock 435
+#define yLock 70
 
 // LED
 #define LED_PIO      PIOC
