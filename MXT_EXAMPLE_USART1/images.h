@@ -22,3 +22,5 @@
 #include "icones/animabub/bubleanima12.h"
 #include "icones/animabub/bubleanima13.h"
 #include "icones/animabub/bubleanima14.h"
+
+//Todas as imagens foram retiradas do site https://icons8.com/  - FREE DESIGN RESOURCES AND SOFTWARE
