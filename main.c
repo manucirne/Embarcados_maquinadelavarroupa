@@ -30,7 +30,8 @@ t_ciclo *initMenuOrder(){
   return(&c_diario);
 }
 
-void main(void){
+int main(void){
   t_ciclo *p_primeiro = initMenuOrder();
   printf("%s", p_primeiro->next->next->nome);
+  return 0;
 }
